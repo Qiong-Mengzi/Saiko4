@@ -1,5 +1,11 @@
-tmp/
+# Virtual Environment.
 .venv/
+# Templ Files.
 *.pyc
+tmp/
+# VSCode Config.
 .vscode/
-*.wav
+# Other File In Sample/
+Sample/
+# Sample.
+!Sample1.sksheet
