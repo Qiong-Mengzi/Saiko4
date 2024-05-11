@@ -1,0 +1,37 @@
+{
+    "Saiko": "4.0.1",
+    "Voice": {
+        "sample": {
+            "1.0": "1.0"
+        }
+    },
+    "A4": 440,
+    "sr": 64000,
+    "volume": 1.0,
+    "envelop": {
+        "default": [
+            0.5, 1.0, 1.0, 0.5, 0.5, 0.2, 0.0
+        ]
+    },
+    "slide": {
+        
+    },
+    "Synth": {
+        "window-length": 640,
+        "norm": true
+    },
+    "Sheet": {
+        "Track-0": [
+            {"voice": "sample", "pitchs": ["A4"], "delay": 0.8},
+            {"voice": "sample", "pitchs": ["#C4"], "delay": 0.8},
+            {"voice": "sample", "pitchs": ["E4"], "delay": 0.8},
+            {"voice": "sample", "pitchs": ["A4", "#C4", "E4"], "delay": 1.5}
+        ],
+        "Track-1": [
+            {"voice": "sample", "pitchs": ["A3"], "delay": 0.8},
+            {"voice": "sample", "pitchs": ["#C3"], "delay": 0.8},
+            {"voice": "sample", "pitchs": ["E3"], "delay": 0.8},
+            {"voice": "sample", "pitchs": ["A4"], "delay": 1.2}
+        ]
+    }
+}
