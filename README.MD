@@ -7,7 +7,7 @@
 在该文件夹下打开命令行，输入：
 
 ```bash
-python Saiko4 Sample/Sample1
+python Saiko4/SheetV2.py Sample/Sample1
 ```
 
 此命令将会在 `Sample` 目录下生成 `Sample1.wav` 文件。
