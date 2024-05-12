@@ -75,11 +75,11 @@ def SynthesisNote(
     sr: int = 64000
 ):
     #wave_length = window_size // 2 * block_num
-    wave_length = (window_size // offset_of_window) * (block_num * offset_of_window)
+    wave_length = window_size // offset_of_window * block_num
     result = np.zeros(wave_length, np.float32)
     for v in voice:
         #result += SynthThread(freq * v[0], v[1], window_size, block_num, volume, envelop, slide, sr)
-        result += SynthThreadV2(freq * v[0], v[1], window_size, window_size // 4, block_num * 4, volume, envelop, slide, sr)
+        result += SynthThreadV2(freq * v[0], v[1], window_size, window_size // offset_of_window, block_num, volume, envelop, slide, sr)
     return result
 
 

@@ -1,2 +1,2 @@
 
-SAIKO_VERSION: str = '4.0.1'
+SAIKO_VERSION: str = '4.0.2'
