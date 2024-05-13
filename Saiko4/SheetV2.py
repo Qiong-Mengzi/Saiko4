@@ -226,6 +226,7 @@ class SaikoSynthesizer(object):
             self.SaveSound(result)
         if play:
             self.PlaySound()
+        return result
 
 if __name__ == '__main__':
     import sys
