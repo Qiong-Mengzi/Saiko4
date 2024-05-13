@@ -32,6 +32,7 @@ else:
 SKSHEET = dict[str, Any]
 
 convert_pitch: Callable[[float], float] = lambda x : 2 ** (x / 12)
+convert_pitch_ex: Callable[[np.ndarray], np.ndarray] = lambda x : np.power(2, x / 12)
 
 class SaikoSynthesizer(object):
     def __init__(self, project_name: str, show_detail: bool = False):
@@ -107,29 +108,44 @@ class SaikoSynthesizer(object):
         self.offset_of_window: int = SynthArg.get("offset", 4)
         self.norm: bool = SynthArg.get('norm', True)
         self.SavingFormat: str = self.sksheet.get('PCM', 'PCM_16')
+        self.BeatPerMinute: float | None = self.sksheet.get('bpm', None)
+        if self.BeatPerMinute != None:
+            print('Using {:.2} BPM.'.format(float(self.BeatPerMinute)))
+            self.BeatPerMinute = self.SampleRate / self.BeatPerMinute * 60
+        
 
-    def GetNote(self, Note: dict[str, Any]):
+    def GetNote(self, Note: dict[str, Any], local_track: dict[str, Any] = {}):
         # Get Note Length
-        NoteLength = int(Note.get('length', float(Note.get('delay', 0.0)) * self.SampleRate))
+        if self.BeatPerMinute != None:
+            if 'length' in Note:
+                NoteLength: int = Note['length']
+            elif 'beat' in Note:
+                NoteLength: int = int(Note['beat'] * self.BeatPerMinute)
+            elif 'delay' in Note:
+                NoteLength: int = int(Note['delay'] * self.SampleRate)
+            else:
+                NoteLength = 0
+        else:
+            NoteLength = int(Note.get('length', Note.get('delay', 0.0) * self.SampleRate))
         # Set Envelop
-        note_envelop: str | list[float] = Note.get('envelop', 'default')
+        note_envelop: str | list[float] = Note.get('envelop', local_track.get('envelop', 'default'))
         if isinstance(note_envelop, str):
             note_envelop = self.EnvelopDict.get(note_envelop, self.EnvelopDict['default'])
         # Set Slide
-        note_slide: str | list[float] = Note.get('slide', 'default')
+        note_slide: str | list[float] = Note.get('slide', local_track.get('slide', 'default'))
         if isinstance(note_slide, str):
             note_slide = self.SlideDict.get(note_slide, self.SlideDict['default'])
         # Set Local Volume
-        volume: float = Note.get('volume', self.GlobalVolume)
+        volume: float = Note.get('volume', local_track.get('volume', self.GlobalVolume))
         # Set Pitchs
         freqs: list[float] = Note.get('freqs', [self.A4_Frequency * convert_pitch(PITCH[pitch]) for pitch in Note.get('pitchs', [])])
         # Choose Voice
-        voice = self.VoiceDict[Note.get('voice', 'none')]
+        voice = self.VoiceDict.get(Note.get('voice', local_track.get('voice', 'none')), self.VoiceDict['none'])
         block_num = NoteLength // (self.window_size // self.offset_of_window) + 1
-        return (NoteLength, freqs, voice, volume, np.array(note_envelop, np.float32), np.array(note_slide, np.float32), self.window_size, block_num, self.offset_of_window, self.SampleRate)
+        return (NoteLength, freqs, voice, volume, np.array(note_envelop, np.float32), convert_pitch_ex(np.array(note_slide, np.float32)), self.window_size, block_num, self.offset_of_window, self.SampleRate)
     
-    def SynthNote(self, Note: dict[str, Any]):
-        NoteArg = self.GetNote(Note)
+    def SynthNote(self, Note: dict[str, Any], local_track: dict[str, Any] = {}):
+        NoteArg = self.GetNote(Note, local_track)
         NoteResult = np.zeros(NoteArg[0], dtype=np.float32)
         for freq in NoteArg[1]:
             # Synthesis
@@ -147,18 +163,28 @@ class SaikoSynthesizer(object):
     def Synthesis(self):
         if self.show_detail:
             print('Saiko Synthesis: Loading Track Data...')
-        Sheet: dict[str, list[Any]] = self.sksheet['Sheet']
+        # Saiko 4.1+ will use track-configuration.
+        Sheet: dict[str, list[Any] | dict[str, list[dict[str, Any]] | str | float | Any]] = self.sksheet['Sheet']
         TrackNameList: list[str] = list(Sheet)
         AllTrackResult: list[np.ndarray[np.float32]] = [None] * len(TrackNameList)
         for TrackNameIndex in range(len(TrackNameList)):
-            TrackData: list[dict[str, Any]] = Sheet[TrackNameList[TrackNameIndex]]
-            TrackResult: list[np.ndarray[np.float32]] = [None] * len(TrackData) # Please ignore this error.
-            # Synth a Track
-            for NoteIndex in range(len(TrackData)):
-                if self.show_detail:
-                    print(f'Saiko Synthesis: Synthesis {TrackNameIndex}/{len(TrackNameList)} Tracks <{TrackNameList[TrackNameIndex]}>, {NoteIndex}/{len(TrackData)} Notes...', end=' '*16 + '\r')
-                Note = TrackData[NoteIndex]
-                TrackResult[NoteIndex] = self.SynthNote(Note)
+            TrackData: list[dict[str, Any]] | dict[str, list[dict[str, Any]] | str | float | Any] = Sheet[TrackNameList[TrackNameIndex]]
+            if isinstance(TrackData, list):
+                TrackResult: list[np.ndarray[np.float32]] = [None] * len(TrackData) # Please ignore this error.
+                # Synth a Track
+                for NoteIndex in range(len(TrackData)):
+                    if self.show_detail:
+                        print(f'Saiko Synthesis: Synthesis {TrackNameIndex}/{len(TrackNameList)} Tracks <{TrackNameList[TrackNameIndex]}>, {NoteIndex}/{len(TrackData)} Notes...', end=' '*16 + '\r')
+                    Note = TrackData[NoteIndex]
+                    TrackResult[NoteIndex] = self.SynthNote(Note)
+            else:
+                TrackResult: list[np.ndarray[np.float32]] = [None] * len(TrackData['track'])
+                # Synth a Track
+                for NoteIndex in range(len(TrackData['track'])):
+                    if self.show_detail:
+                        print('Saiko Synthesis: Synthesis {0}/{1} Tracks <{2}>, {3}/{4} Notes...'.format(TrackNameIndex, len(TrackNameList), TrackNameList[TrackNameIndex], NoteIndex, len(TrackData['track'])), end=' '*16 + '\r')
+                    Note = TrackData['track'][NoteIndex]
+                    TrackResult[NoteIndex] = self.SynthNote(Note, TrackData)
             AllTrackResult[TrackNameIndex] = np.concatenate(TrackResult)
         return AllTrackResult
     
@@ -168,6 +194,8 @@ class SaikoSynthesizer(object):
         for track in AllTrackResult:
             max_sound_length = max(max_sound_length, track.size)
         SoundResult = np.zeros(max_sound_length, np.float32)
+        if SoundResult.size == 0:
+            return SoundResult
         for track in AllTrackResult:
             SoundResult[:track.size] += track
         max_sound_sample = np.max(np.abs(SoundResult))

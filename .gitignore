@@ -5,7 +5,7 @@
 tmp/
 # VSCode Config.
 .vscode/
-# Other File In Sample/
-Sample/
-# Sample.
-!Sample1.sksheet
+# WAV Result
+*.wav
+# Other SaikoSheet
+Sksheet/
