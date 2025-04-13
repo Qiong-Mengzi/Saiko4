@@ -1,0 +1,6 @@
+# 最小所需的依赖
+
+cffi==1.17.1
+numpy==2.2.4
+pycparser==2.22
+soundfile==0.13.1
