@@ -4,6 +4,7 @@
 
 > [!NOTE]
 > 由于 Saiko v8 的 Alpha 阶段已结束，故结束对 Saiko v4 的支持 (EOS)
+>
 > 很抱歉我将不会再在Github上贡献代码，Saiko v8 的源代码将来会公开，但不是在这里。
 
 ## Sample
